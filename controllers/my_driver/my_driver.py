@@ -34,7 +34,7 @@ LANE_WIDTH_STEER = 0.25
 
 manual_speed = 0.0
 manual_steer = 0.0
-MAX_SPEED = 30.0
+MAX_SPEED = 60.0
 MAX_REVERSE_SPEED = -10.0
 ACCEL_STEP = 0.5
 BRAKE_STEP = 0.5
@@ -115,9 +115,13 @@ count = 0
 while driver.step() != -1:
     count += 1
 
+    pressed_keys = set()
     key = keyboard.getKey()
+    while key != -1:
+        pressed_keys.add(key)
+        key = keyboard.getKey()
 
-    m_pressed = (key == ord('M'))
+    m_pressed = (ord('M') in pressed_keys)
     if m_pressed and not prev_m_pressed:
         mode = MODE_MANUAL if mode == MODE_AUTO else MODE_AUTO
         print(f"Mode switched to: {mode}")
@@ -133,11 +137,11 @@ while driver.step() != -1:
         display.imageDelete(ir_image)
 
     if mode == MODE_MANUAL:
-        up_pressed = (key == keyboard.UP)
-        down_pressed = (key == keyboard.DOWN)
-        left_pressed = (key == keyboard.LEFT)
-        right_pressed = (key == keyboard.RIGHT)
-
+        up_pressed = (keyboard.UP in pressed_keys)
+        down_pressed = (keyboard.DOWN in pressed_keys)
+        left_pressed = (keyboard.LEFT in pressed_keys)
+        right_pressed = (keyboard.RIGHT in pressed_keys)
+       
         if up_pressed:
             manual_speed = min(manual_speed + ACCEL_STEP, MAX_SPEED)
         elif down_pressed:
@@ -157,7 +161,13 @@ while driver.step() != -1:
                 manual_steer = max(manual_steer - STEER_RETURN, 0)
             elif manual_steer < 0:
                 manual_steer = min(manual_steer + STEER_RETURN, 0)
-
+        if manual_speed > 40:
+            speed_limit_factor = 0.4
+        elif manual_speed > 25:
+            speed_limit_factor = 0.65
+        else:
+            speed_limit_factor = 1.0
+        manual_steer = max(min(manual_steer, MAX_STEER * speed_limit_factor), -MAX_STEER * speed_limit_factor)
         driver.setSteeringAngle(manual_steer)
         driver.setCruisingSpeed(manual_speed)
 
